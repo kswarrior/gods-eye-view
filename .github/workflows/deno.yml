@@ -1,0 +1,50 @@
+name: Start Vite dev server on port 3000
+# Start the app (Vite) on port 3000 via GitHub Actions
+# Trigger manually with "Run workflow" in the Actions UI (workflow_dispatch).
+# Note: the runner is ephemeral — when the job ends the server process is stopped.
+on:
+  workflow_dispatch:
+
+jobs:
+  start-dev-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install cloudflared
+        run: |
+          set -e
+          curl -fL \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+            -o /tmp/cloudflared
+          chmod +x /tmp/cloudflared
+          sudo install /tmp/cloudflared /usr/local/bin/cloudflared
+          cloudflared --version
+          # Start the tunnel using a secret stored in GitHub Actions secrets
+          nohup cloudflared tunnel run \
+            --token "${{ secrets.CF_TUNNEL_TOKEN }}" \
+            > /tmp/cloudflared.log 2>&1 &
+          echo $! > /tmp/cloudflared.pid
+          sleep 10
+          if ! kill -0 "$(cat /tmp/cloudflared.pid)" 2>/dev/null; then
+            echo "Cloudflare Tunnel failed to start."
+            cat /tmp/cloudflared.log
+            exit 1
+          fi
+          echo "Cloudflare Tunnel is running."
+
+      - name: Start dev server on port 3000 (background)
+        run: |
+          # Start Vite binding to all interfaces so wait-on/curl can reach it.
+          # Logs are written to dev.log and PID to dev.pid.
+          npm run dev -- --host 0.0.0.0 --port 3000

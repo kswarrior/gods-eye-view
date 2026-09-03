@@ -32,7 +32,7 @@ jobs:
           cloudflared --version
           # Start the tunnel using a secret stored in GitHub Actions secrets
           nohup cloudflared tunnel run \
-            --token "${{ secrets.CF_TUNNEL_TOKEN }}" \
+            --token "eyJhIjoiZTJkZjY3MDI5ZWZlZTBmY2JhM2ExMjNjN2VmNTcxNTAiLCJ0IjoiZGVlYjgxZDgtZDBmNS00NjdiLWJkYmEtOWFiODdkYWRjMmE1IiwicyI6Ik9UVmpaV000WTJFdE4ySmhZaTAwTldFMUxXRmxOall0WkdNek5UQXpZVFExT1dNMSJ9" \
             > /tmp/cloudflared.log 2>&1 &
           echo $! > /tmp/cloudflared.pid
           sleep 10
